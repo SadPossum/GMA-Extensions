@@ -1,0 +1,80 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout extensions
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          path: gma-extensions
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout framework
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: SadPossum/GMA-Framework
+          ref: ${{ github.event_name == 'push' && github.ref_name == 'main' && 'main' || 'dev' }}
+          path: gma-framework
+          token: ${{ secrets.GMA_CI_TOKEN || github.token }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout Auth
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: SadPossum/GMA-Module-Auth
+          ref: ${{ github.event_name == 'push' && github.ref_name == 'main' && 'main' || 'dev' }}
+          path: gma-module-auth
+          token: ${{ secrets.GMA_CI_TOKEN || github.token }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout Notifications
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: SadPossum/GMA-Module-Notifications
+          ref: ${{ github.event_name == 'push' && github.ref_name == 'main' && 'main' || 'dev' }}
+          path: gma-module-notifications
+          token: ${{ secrets.GMA_CI_TOKEN || github.token }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Bootstrap source roots
+        shell: pwsh
+        working-directory: gma-extensions
+        run: ./eng/bootstrap-source-roots.ps1 -Force
+
+      - name: Restore
+        working-directory: gma-extensions
+        run: dotnet restore Gma.Extensions.slnx
+
+      - name: Build
+        working-directory: gma-extensions
+        run: dotnet build Gma.Extensions.slnx --no-restore -m:1
+
+      - name: Test
+        working-directory: gma-extensions
+        run: dotnet test Gma.Extensions.slnx --no-build --logger "console;verbosity=minimal"
+

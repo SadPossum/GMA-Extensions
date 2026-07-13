@@ -1,0 +1,30 @@
+<Solution>
+  <Folder Name="/.github/workflows/">
+    <File Path=".github/workflows/validate.yml" />
+  </Folder>
+  <Folder Name="/docs/">
+    <File Path="docs/README.md" />
+  </Folder>
+  <Folder Name="/eng/">
+    <File Path="eng/bootstrap-source-roots.ps1" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="Gma.SourceRoots.props.example" />
+    <File Path="LICENSE" />
+    <File Path="nuget.config" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Gma.Extensions.Auth.Notifications/Gma.Extensions.Auth.Notifications.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Gma.Extensions.Auth.Notifications.Tests/Gma.Extensions.Auth.Notifications.Tests.csproj" />
+  </Folder>
+</Solution>
+
