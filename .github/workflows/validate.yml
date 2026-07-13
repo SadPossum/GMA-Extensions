@@ -66,6 +66,16 @@ jobs:
         working-directory: gma-extensions
         run: ./eng/bootstrap-source-roots.ps1 -Force
 
+      - name: Bootstrap Auth source roots
+        shell: pwsh
+        working-directory: gma-module-auth
+        run: ./eng/bootstrap-source-roots.ps1 -Force
+
+      - name: Bootstrap Notifications source roots
+        shell: pwsh
+        working-directory: gma-module-notifications
+        run: ./eng/bootstrap-source-roots.ps1 -Force
+
       - name: Restore
         working-directory: gma-extensions
         run: dotnet restore Gma.Extensions.slnx
@@ -77,4 +87,3 @@ jobs:
       - name: Test
         working-directory: gma-extensions
         run: dotnet test Gma.Extensions.slnx --no-build --logger "console;verbosity=minimal"
-
