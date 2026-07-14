@@ -7,6 +7,6 @@ GMA modules remain independently buildable and do not reference one another. An 
 Available extensions:
 
 - `Gma.Extensions.Auth.Notifications` maps Auth security events into durable tagged Notifications requests and resolves Auth member email destinations at delivery time.
+- `Gma.Extensions.Auth.Organizations` verifies recipient-bound organization invitations against the accepting Auth member's preferred verified email.
 
 See `docs/README.md` for composition and boundary guidance.
-

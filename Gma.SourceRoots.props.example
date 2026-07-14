@@ -4,6 +4,6 @@
     <GmaFrameworkRoot>$(MSBuildThisFileDirectory)..\gma-framework\src\</GmaFrameworkRoot>
     <GmaModuleAuthRoot>$(MSBuildThisFileDirectory)..\gma-module-auth\src\</GmaModuleAuthRoot>
     <GmaModuleNotificationsRoot>$(MSBuildThisFileDirectory)..\gma-module-notifications\src\</GmaModuleNotificationsRoot>
+    <GmaModuleOrganizationsRoot>$(MSBuildThisFileDirectory)..\gma-module-organizations\src\</GmaModuleOrganizationsRoot>
   </PropertyGroup>
 </Project>
-

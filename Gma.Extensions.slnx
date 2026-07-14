@@ -22,9 +22,10 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Gma.Extensions.Auth.Notifications/Gma.Extensions.Auth.Notifications.csproj" />
+    <Project Path="src/Gma.Extensions.Auth.Organizations/Gma.Extensions.Auth.Organizations.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Gma.Extensions.Auth.Notifications.Tests/Gma.Extensions.Auth.Notifications.Tests.csproj" />
+    <Project Path="tests/Gma.Extensions.Auth.Organizations.Tests/Gma.Extensions.Auth.Organizations.Tests.csproj" />
   </Folder>
 </Solution>
-

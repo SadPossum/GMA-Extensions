@@ -56,6 +56,16 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Checkout Organizations
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: SadPossum/GMA-Module-Organizations
+          ref: ${{ github.event_name == 'push' && github.ref_name == 'main' && 'main' || 'dev' }}
+          path: gma-module-organizations
+          token: ${{ secrets.GMA_CI_TOKEN || github.token }}
+          fetch-depth: 0
+          persist-credentials: false
+
       - name: Setup .NET
         uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
         with:
@@ -74,6 +84,11 @@ jobs:
       - name: Bootstrap Notifications source roots
         shell: pwsh
         working-directory: gma-module-notifications
+        run: ./eng/bootstrap-source-roots.ps1 -Force
+
+      - name: Bootstrap Organizations source roots
+        shell: pwsh
+        working-directory: gma-module-organizations
         run: ./eng/bootstrap-source-roots.ps1 -Force
 
       - name: Restore

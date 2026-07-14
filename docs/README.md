@@ -23,10 +23,24 @@ builder.Services.AddNotificationEmailAdapter(builder.Configuration);
 
 The host must also register an `IEmailSender` and enable the email adapter before mail leaves the process.
 
+## Auth + Organizations
+
+`Gma.Extensions.Auth.Organizations` replaces Organizations' fail-closed recipient-invitation policy with an Auth-backed policy. Unbound invitations keep working without an Auth lookup. A recipient-bound invitation can be accepted only when the subject id is an Auth member id and that member owns the same preferred verified email in the configured global Auth scope.
+
+```csharp
+using Gma.Extensions.Auth.Organizations;
+
+builder.AddAuthModule(AuthProfile.Global());
+builder.AddModule<OrganizationsModule>();
+builder.Services.AddAuthOrganizationsExtension();
+```
+
+Register the extension after the Organizations module. Pass a configuration callback when the application uses a non-default global Auth scope.
+
 ## Boundary rule
 
 - Auth does not reference Notifications or this repository.
 - Notifications does not reference Auth or this repository.
+- Organizations does not reference Auth or this repository.
 - This extension references only the public Auth and Notifications seams it composes.
 - Product applications decide whether to mount and register the extension.
-
