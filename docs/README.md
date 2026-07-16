@@ -37,6 +37,19 @@ builder.Services.AddAuthOrganizationsExtension();
 
 Register the extension after the Organizations module. Pass a configuration callback when the application uses a non-default global Auth scope.
 
+## Organizations + Tenancy
+
+`Gma.Extensions.Organizations.Tenancy` plugs an Organizations access decision into the framework's tenant endpoint policy hook. Every endpoint using `RequireTenant()` then fails closed for user subjects unless the selected tenant is an active organization with an active membership. Admin actor, service, and system subjects bypass membership lookup by default; user bypasses are rejected by options validation.
+
+```csharp
+using Gma.Extensions.Organizations.Tenancy;
+
+builder.AddModule<OrganizationsModule>();
+builder.Services.AddOrganizationsTenancyExtension();
+```
+
+Register the extension after Organizations and AccessControl HTTP subject resolution. The module remains independent: Organizations references neither Tenancy nor this repository.
+
 ## Boundary rule
 
 - Auth does not reference Notifications or this repository.
