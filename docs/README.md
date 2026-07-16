@@ -48,7 +48,7 @@ builder.AddModule<OrganizationsModule>();
 builder.Services.AddOrganizationsTenancyExtension();
 ```
 
-Register the extension after Organizations and AccessControl HTTP subject resolution. The module remains independent: Organizations references neither Tenancy nor this repository.
+Register the extension after Organizations. It installs the default claims-based AccessControl subject resolver when the application has not supplied one; custom resolvers should be registered first. The module remains independent: Organizations references neither Tenancy nor this repository.
 
 ## Boundary rule
 

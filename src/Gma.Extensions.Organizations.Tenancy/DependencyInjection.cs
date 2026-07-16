@@ -1,6 +1,7 @@
 namespace Gma.Extensions.Organizations.Tenancy;
 
 using Gma.Framework.AccessControl;
+using Gma.Framework.AccessControl.AspNetCore;
 using Gma.Framework.Api.Tenancy;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -12,6 +13,8 @@ public static class DependencyInjection
         Action<OrganizationsTenancyOptions>? configure = null)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        services.AddGmaAccessControlAspNetCore();
 
         if (configure is not null)
         {
