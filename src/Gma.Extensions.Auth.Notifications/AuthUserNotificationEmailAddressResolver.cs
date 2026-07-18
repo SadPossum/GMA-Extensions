@@ -39,7 +39,7 @@ internal sealed class AuthUserNotificationEmailAddressResolver(IServiceScopeFact
     {
         email = null;
         if (!string.Equals(message.Module, AuthModuleMetadata.Name, StringComparison.Ordinal) ||
-            !string.Equals(message.Name, "email-verification-requested", StringComparison.Ordinal) ||
+            !UsesExactPayloadAddress(message.Name) ||
             message.Payload.ValueKind != System.Text.Json.JsonValueKind.Object ||
             !message.Payload.TryGetProperty("Email", out System.Text.Json.JsonElement property))
         {
@@ -49,5 +49,8 @@ internal sealed class AuthUserNotificationEmailAddressResolver(IServiceScopeFact
         email = property.GetString();
         return EmailSendRequest.IsValidAddress(email);
     }
-}
 
+    private static bool UsesExactPayloadAddress(string notificationName) =>
+        string.Equals(notificationName, "email-verification-requested", StringComparison.Ordinal) ||
+        string.Equals(notificationName, "password-recovery-requested", StringComparison.Ordinal);
+}

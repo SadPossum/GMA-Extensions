@@ -74,6 +74,36 @@ internal sealed class MemberAuthenticationMethodChangedNotificationHandler(IUser
             cancellationToken);
 }
 
+[IntegrationEventHandler("auth-password-recovery-request-notification", RequiresExplicitProducerBinding = true)]
+internal sealed class MemberPasswordRecoveryRequestedNotificationHandler(IUserNotificationRequestProjector projector)
+    : IIntegrationEventHandler<MemberPasswordRecoveryRequestedIntegrationEvent>
+{
+    public Task HandleAsync(
+        MemberPasswordRecoveryRequestedIntegrationEvent integrationEvent,
+        CancellationToken cancellationToken) =>
+        projector.ProjectAsync(
+            new UserNotificationRequestedIntegrationEventV2(
+                integrationEvent.EventId,
+                integrationEvent.ScopeId,
+                integrationEvent.OccurredAtUtc,
+                integrationEvent.MemberId.ToString("D"),
+                AuthModuleMetadata.Name,
+                "password-recovery-requested",
+                1,
+                "Reset your account password",
+                $"Use this one-time password recovery code: {integrationEvent.RecoveryCode}",
+                NotificationSeverity.Warning,
+                JsonSerializer.Serialize(new
+                {
+                    integrationEvent.Email,
+                    integrationEvent.ChallengeId,
+                    integrationEvent.ExpiresAtUtc,
+                }),
+                AuthNotificationTags.PasswordRecoveryRequest,
+                NotificationDeliveryPolicy.Mandatory),
+            cancellationToken);
+}
+
 [IntegrationEventHandler("auth-email-verification-request-notification", RequiresExplicitProducerBinding = true)]
 internal sealed class MemberEmailVerificationRequestedNotificationHandler(IUserNotificationRequestProjector projector)
     : IIntegrationEventHandler<MemberEmailVerificationRequestedIntegrationEvent>
@@ -125,4 +155,3 @@ internal sealed class MemberEmailVerifiedNotificationHandler(IUserNotificationRe
                 NotificationDeliveryPolicy.Mandatory),
             cancellationToken);
 }
-

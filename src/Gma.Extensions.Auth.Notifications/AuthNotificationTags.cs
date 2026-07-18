@@ -35,11 +35,20 @@ internal static class AuthNotificationTags
         "Email verification",
         "Email ownership verification activity.");
 
+    private static readonly NotificationTag PasswordRecovery = new(
+        "domain:password-recovery",
+        NotificationTagKind.Domain,
+        "Password recovery",
+        "Password recovery and credential reset activity.");
+
     public static IReadOnlyList<NotificationTag> SignIn { get; } =
         [Email, Web, Security, Authentication];
 
     public static IReadOnlyList<NotificationTag> AuthenticationMethodChanged { get; } =
         [Email, Web, Security, Authentication];
+
+    public static IReadOnlyList<NotificationTag> PasswordRecoveryRequest { get; } =
+        [Email, Security, PasswordRecovery];
 
     public static IReadOnlyList<NotificationTag> VerificationRequest { get; } =
         [Email, Security, EmailVerification];
@@ -47,4 +56,3 @@ internal static class AuthNotificationTags
     public static IReadOnlyList<NotificationTag> VerificationCompleted { get; } =
         [Web, Security, EmailVerification];
 }
-

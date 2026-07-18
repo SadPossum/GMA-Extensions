@@ -31,6 +31,14 @@ public static class DependencyInjection
             MemberAuthenticationMethodChangedIntegrationEvent.EventVersion,
             "auth-method-changed-notification");
         services.AddIntegrationEventHandler<
+            MemberPasswordRecoveryRequestedIntegrationEvent,
+            MemberPasswordRecoveryRequestedNotificationHandler>(
+            NotificationsModuleMetadata.Name,
+            AuthModuleMetadata.Name,
+            MemberPasswordRecoveryRequestedIntegrationEvent.EventType,
+            MemberPasswordRecoveryRequestedIntegrationEvent.EventVersion,
+            "auth-password-recovery-request-notification");
+        services.AddIntegrationEventHandler<
             MemberEmailVerificationRequestedIntegrationEvent,
             MemberEmailVerificationRequestedNotificationHandler>(
             NotificationsModuleMetadata.Name,
@@ -50,4 +58,3 @@ public static class DependencyInjection
         return services;
     }
 }
-
