@@ -12,7 +12,7 @@ Extensions are optional integration packages, not modules. They live outside mod
 - email-verification requests;
 - completed email verification.
 
-It also supplies `IUserNotificationEmailAddressResolver`: recovery and verification messages use the exact address carried by the Auth event, while other alerts resolve the member's preferred verified email through `IAuthMemberContactReader` at delivery time. Recovery codes are never projected to the web channel. Hosts must encrypt and tightly retain every messaging, Notifications, and email-delivery record that temporarily carries a recovery code.
+It also supplies `IUserNotificationEmailAddressResolver`: recovery and verification messages use the exact address and expiry carried by the Auth event, fail terminally after expiry or on malformed payloads, and never fall back to another mailbox. Other alerts resolve the member's preferred verified email through `IAuthMemberContactReader` at delivery time. Recovery codes are never projected to the web channel. Hosts must encrypt and tightly retain every messaging, Notifications, and email-delivery record that temporarily carries a recovery code.
 
 ```csharp
 using Gma.Extensions.Auth.Notifications;

@@ -2,6 +2,7 @@ namespace Gma.Extensions.Auth.Notifications.Tests;
 
 using System.Text.Json;
 using Gma.Framework.Notifications;
+using Gma.Framework.Runtime.Time;
 using Gma.Modules.Auth.Contracts;
 using Gma.Modules.Notifications.Adapters.Email;
 using Gma.Modules.Notifications.Application.Ports;
@@ -9,33 +10,31 @@ using Gma.Modules.Notifications.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using ContractDeliveryPolicy = Gma.Modules.Notifications.Contracts.NotificationDeliveryPolicy;
+using FrameworkDeliveryPolicy = Gma.Framework.Notifications.NotificationDeliveryPolicy;
+using FrameworkSeverity = Gma.Framework.Notifications.NotificationSeverity;
 
 [Trait("Category", "Unit")]
 public sealed class AuthNotificationsExtensionTests
 {
+    private static readonly DateTimeOffset Now = new(2026, 7, 19, 20, 0, 0, TimeSpan.Zero);
+
     [Fact]
-    public async Task Password_recovery_delivery_resolves_the_exact_event_address()
+    public async Task Password_recovery_destination_resolves_only_before_the_request_expires()
     {
-        using ServiceProvider services = new ServiceCollection().BuildServiceProvider();
-        var resolver = new AuthUserNotificationEmailAddressResolver(services.GetRequiredService<IServiceScopeFactory>());
-        UserNotificationMessage message = new(
-            Guid.NewGuid(),
-            AuthModuleMetadata.Name,
-            "password-recovery-requested",
-            1,
-            "tenant-a",
-            Guid.NewGuid().ToString("D"),
-            "Reset your account password",
-            "Use the recovery code.",
-            Gma.Framework.Notifications.NotificationSeverity.Warning,
-            DateTimeOffset.UtcNow,
-            JsonSerializer.SerializeToElement(new { Email = "exact@example.com" }),
-            deliveryPolicy: Gma.Framework.Notifications.NotificationDeliveryPolicy.Mandatory);
+        await using ServiceProvider provider = new ServiceCollection().BuildServiceProvider();
+        AuthUserNotificationEmailAddressResolver resolver = new(
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            new FixedClock());
 
-        NotificationEmailDestinationResult result = await resolver.ResolveAsync(message);
+        NotificationEmailDestinationResult current = await resolver.ResolveAsync(
+            CreatePasswordRecoveryMessage(Now.AddMinutes(1)));
+        NotificationEmailDestinationResult expired = await resolver.ResolveAsync(
+            CreatePasswordRecoveryMessage(Now));
 
-        Assert.Equal(NotificationEmailDestinationOutcome.Resolved, result.Outcome);
-        Assert.Equal("exact@example.com", result.Address);
+        Assert.Equal(NotificationEmailDestinationOutcome.Resolved, current.Outcome);
+        Assert.Equal("exact@example.com", current.Address);
+        Assert.Equal(NotificationEmailDestinationOutcome.Unavailable, expired.Outcome);
+        Assert.Equal("auth-password-recovery-expired", expired.Code);
     }
 
     [Fact]
@@ -65,6 +64,7 @@ public sealed class AuthNotificationsExtensionTests
         using JsonDocument payload = JsonDocument.Parse(projected.PayloadJson);
         Assert.Equal("owner@example.com", payload.RootElement.GetProperty("Email").GetString());
         Assert.Equal(challengeId, payload.RootElement.GetProperty("ChallengeId").GetGuid());
+        Assert.Equal(integrationEvent.ExpiresAtUtc, payload.RootElement.GetProperty("ExpiresAtUtc").GetDateTimeOffset());
     }
 
     [Fact]
@@ -89,6 +89,46 @@ public sealed class AuthNotificationsExtensionTests
         Assert.DoesNotContain(projected.Tags, tag => tag.Key == NotificationTags.Web);
         using JsonDocument payload = JsonDocument.Parse(projected.PayloadJson);
         Assert.Equal("pending@example.com", payload.RootElement.GetProperty("Email").GetString());
+        Assert.Equal(integrationEvent.ExpiresAtUtc, payload.RootElement.GetProperty("ExpiresAtUtc").GetDateTimeOffset());
+    }
+
+    [Fact]
+    public async Task Verification_destination_resolves_only_before_the_request_expires()
+    {
+        await using ServiceProvider provider = new ServiceCollection().BuildServiceProvider();
+        AuthUserNotificationEmailAddressResolver resolver = new(
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            new FixedClock());
+
+        NotificationEmailDestinationResult current = await resolver.ResolveAsync(
+            CreateVerificationMessage(Now.AddMinutes(1)),
+            CancellationToken.None);
+        NotificationEmailDestinationResult expired = await resolver.ResolveAsync(
+            CreateVerificationMessage(Now),
+            CancellationToken.None);
+
+        Assert.Equal(NotificationEmailDestinationOutcome.Resolved, current.Outcome);
+        Assert.Equal("pending@example.com", current.Address);
+        Assert.Equal(NotificationEmailDestinationOutcome.Unavailable, expired.Outcome);
+        Assert.Equal("auth-email-verification-expired", expired.Code);
+    }
+
+    [Fact]
+    public async Task Malformed_verification_payload_does_not_fall_back_to_member_contact()
+    {
+        await using ServiceProvider provider = new ServiceCollection().BuildServiceProvider();
+        AuthUserNotificationEmailAddressResolver resolver = new(
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            new FixedClock());
+        UserNotificationMessage message = CreateMessage(JsonSerializer.SerializeToElement(new
+        {
+            Email = "pending@example.com",
+        }));
+
+        NotificationEmailDestinationResult result = await resolver.ResolveAsync(message, CancellationToken.None);
+
+        Assert.Equal(NotificationEmailDestinationOutcome.Unavailable, result.Outcome);
+        Assert.Equal("auth-email-verification-payload-invalid", result.Code);
     }
 
     [Fact]
@@ -149,5 +189,56 @@ public sealed class AuthNotificationsExtensionTests
             this.Event = integrationEvent;
             return Task.CompletedTask;
         }
+    }
+    private static UserNotificationMessage CreateVerificationMessage(DateTimeOffset expiresAtUtc) =>
+        CreateExactAddressMessage(
+            "email-verification-requested",
+            "pending@example.com",
+            expiresAtUtc,
+            FrameworkSeverity.Info);
+
+    private static UserNotificationMessage CreatePasswordRecoveryMessage(DateTimeOffset expiresAtUtc) =>
+        CreateExactAddressMessage(
+            "password-recovery-requested",
+            "exact@example.com",
+            expiresAtUtc,
+            FrameworkSeverity.Warning);
+
+    private static UserNotificationMessage CreateMessage(JsonElement payload) =>
+        CreateMessage("email-verification-requested", FrameworkSeverity.Info, payload);
+
+    private static UserNotificationMessage CreateExactAddressMessage(
+        string name,
+        string email,
+        DateTimeOffset expiresAtUtc,
+        FrameworkSeverity severity) =>
+        CreateMessage(name, severity, JsonSerializer.SerializeToElement(new
+        {
+            Email = email,
+            ExpiresAtUtc = expiresAtUtc,
+        }));
+
+    private static UserNotificationMessage CreateMessage(
+        string name,
+        FrameworkSeverity severity,
+        JsonElement payload) =>
+        new(
+            Guid.CreateVersion7(),
+            AuthModuleMetadata.Name,
+            name,
+            1,
+            "tenant-a",
+            Guid.CreateVersion7().ToString("D"),
+            name,
+            null,
+            severity,
+            Now,
+            payload,
+            [NotificationTags.Email],
+            FrameworkDeliveryPolicy.Mandatory);
+
+    private sealed class FixedClock : ISystemClock
+    {
+        public DateTimeOffset UtcNow => Now;
     }
 }

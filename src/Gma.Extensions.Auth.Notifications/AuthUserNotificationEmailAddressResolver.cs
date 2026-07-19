@@ -2,20 +2,23 @@ namespace Gma.Extensions.Auth.Notifications;
 
 using Gma.Framework.Email;
 using Gma.Framework.Notifications;
+using Gma.Framework.Runtime.Time;
 using Gma.Modules.Auth.Contracts;
 using Gma.Modules.Notifications.Adapters.Email;
 using Microsoft.Extensions.DependencyInjection;
 
-internal sealed class AuthUserNotificationEmailAddressResolver(IServiceScopeFactory scopeFactory)
+internal sealed class AuthUserNotificationEmailAddressResolver(
+    IServiceScopeFactory scopeFactory,
+    ISystemClock clock)
     : IUserNotificationEmailAddressResolver
 {
     public async ValueTask<NotificationEmailDestinationResult> ResolveAsync(
         UserNotificationMessage message,
         CancellationToken cancellationToken = default)
     {
-        if (TryGetPayloadEmail(message, out string? payloadEmail))
+        if (IsExactAddressRequest(message))
         {
-            return NotificationEmailDestinationResult.Resolved(payloadEmail);
+            return ResolveExactAddressDestination(message, clock.UtcNow);
         }
 
         if (!Guid.TryParse(message.UserId, out Guid memberId))
@@ -33,24 +36,37 @@ internal sealed class AuthUserNotificationEmailAddressResolver(IServiceScopeFact
             : NotificationEmailDestinationResult.Unavailable("auth-verified-email-unavailable");
     }
 
-    private static bool TryGetPayloadEmail(
+    private static bool IsExactAddressRequest(UserNotificationMessage message) =>
+        string.Equals(message.Module, AuthModuleMetadata.Name, StringComparison.Ordinal) &&
+        (string.Equals(message.Name, "email-verification-requested", StringComparison.Ordinal) ||
+         string.Equals(message.Name, "password-recovery-requested", StringComparison.Ordinal));
+
+    private static NotificationEmailDestinationResult ResolveExactAddressDestination(
         UserNotificationMessage message,
-        [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? email)
+        DateTimeOffset nowUtc)
     {
-        email = null;
-        if (!string.Equals(message.Module, AuthModuleMetadata.Name, StringComparison.Ordinal) ||
-            !UsesExactPayloadAddress(message.Name) ||
-            message.Payload.ValueKind != System.Text.Json.JsonValueKind.Object ||
-            !message.Payload.TryGetProperty("Email", out System.Text.Json.JsonElement property))
+        string codePrefix = string.Equals(
+            message.Name,
+            "password-recovery-requested",
+            StringComparison.Ordinal)
+            ? "auth-password-recovery"
+            : "auth-email-verification";
+        if (message.Payload.ValueKind != System.Text.Json.JsonValueKind.Object ||
+            !message.Payload.TryGetProperty("Email", out System.Text.Json.JsonElement emailProperty) ||
+            !message.Payload.TryGetProperty("ExpiresAtUtc", out System.Text.Json.JsonElement expiryProperty) ||
+            !expiryProperty.TryGetDateTimeOffset(out DateTimeOffset expiresAtUtc))
         {
-            return false;
+            return NotificationEmailDestinationResult.Unavailable($"{codePrefix}-payload-invalid");
         }
 
-        email = property.GetString();
-        return EmailSendRequest.IsValidAddress(email);
-    }
+        string? email = emailProperty.GetString();
+        if (!EmailSendRequest.IsValidAddress(email))
+        {
+            return NotificationEmailDestinationResult.Unavailable($"{codePrefix}-payload-invalid");
+        }
 
-    private static bool UsesExactPayloadAddress(string notificationName) =>
-        string.Equals(notificationName, "email-verification-requested", StringComparison.Ordinal) ||
-        string.Equals(notificationName, "password-recovery-requested", StringComparison.Ordinal);
+        return expiresAtUtc <= nowUtc
+            ? NotificationEmailDestinationResult.Unavailable($"{codePrefix}-expired")
+            : NotificationEmailDestinationResult.Resolved(email!);
+    }
 }
