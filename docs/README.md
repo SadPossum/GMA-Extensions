@@ -77,3 +77,5 @@ Compose the extension only when both modules are installed. Products remain resp
 - Organizations does not reference Auth or this repository.
 - Each extension references only the public contracts or explicit policy seams of the modules it composes.
 - Product applications decide whether to mount and register the extension.
+
+`eng/check-boundaries.ps1` makes those edges explicit. Every extension has an allowlist of module projects and namespaces; CI rejects undeclared module dependencies, product source, and accidental use of domain, persistence, or front-door internals.
