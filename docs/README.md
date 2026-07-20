@@ -51,10 +51,29 @@ builder.Services.AddOrganizationsTenancyExtension();
 
 Register the extension after Organizations. It installs the default claims-based AccessControl subject resolver when the application has not supplied one; custom resolvers should be registered first. The module remains independent: Organizations references neither Tenancy nor this repository.
 
+## Organizations + AccessControl
+
+`Gma.Extensions.Organizations.AccessControl` consumes organization membership lifecycle events in AccessControl's durable inbox. Suspended and removed memberships lose every scoped access-profile assignment in that organization's exact owner scope. Active membership changes are ignored. Revocation is transactional and idempotent inside AccessControl, preserves immutable unassignment history, and does not remove compatibility roles or assignments in another scope.
+
+```csharp
+using Gma.Extensions.Organizations.AccessControl;
+
+builder.AddModule<OrganizationsModule>();
+builder.Services.AddAccessControlApplication(builder.Configuration);
+builder.AddAccessControlPersistence();
+builder.Services.AddOrganizationsAccessControlExtension(options =>
+{
+    options.OwnerScopeSegmentName = "tenant";
+    options.SystemActorId = "organizations-membership-sync";
+});
+```
+
+Compose the extension only when both modules are installed. Products remain responsible for compatibility-role synchronization and for any assignment-eligibility policy tied to product membership or employment state. The extension contains no role names, permission sets, invitation behavior, or product UI assumptions.
+
 ## Boundary rule
 
 - Auth does not reference Notifications or this repository.
 - Notifications does not reference Auth or this repository.
 - Organizations does not reference Auth or this repository.
-- This extension references only the public Auth and Notifications seams it composes.
+- Each extension references only the public contracts or explicit policy seams of the modules it composes.
 - Product applications decide whether to mount and register the extension.

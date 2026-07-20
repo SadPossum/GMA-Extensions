@@ -23,11 +23,13 @@
   <Folder Name="/src/">
     <Project Path="src/Gma.Extensions.Auth.Notifications/Gma.Extensions.Auth.Notifications.csproj" />
     <Project Path="src/Gma.Extensions.Auth.Organizations/Gma.Extensions.Auth.Organizations.csproj" />
+    <Project Path="src/Gma.Extensions.Organizations.AccessControl/Gma.Extensions.Organizations.AccessControl.csproj" />
     <Project Path="src/Gma.Extensions.Organizations.Tenancy/Gma.Extensions.Organizations.Tenancy.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Gma.Extensions.Auth.Notifications.Tests/Gma.Extensions.Auth.Notifications.Tests.csproj" />
     <Project Path="tests/Gma.Extensions.Auth.Organizations.Tests/Gma.Extensions.Auth.Organizations.Tests.csproj" />
+    <Project Path="tests/Gma.Extensions.Organizations.AccessControl.Tests/Gma.Extensions.Organizations.AccessControl.Tests.csproj" />
     <Project Path="tests/Gma.Extensions.Organizations.Tenancy.Tests/Gma.Extensions.Organizations.Tenancy.Tests.csproj" />
   </Folder>
 </Solution>

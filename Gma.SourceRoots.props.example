@@ -2,6 +2,7 @@
   <PropertyGroup>
     <GmaExtensionsRoot>$(MSBuildThisFileDirectory)src\</GmaExtensionsRoot>
     <GmaFrameworkRoot>$(MSBuildThisFileDirectory)..\gma-framework\src\</GmaFrameworkRoot>
+    <GmaModuleAccessControlRoot>$(MSBuildThisFileDirectory)..\gma-module-access-control\src\</GmaModuleAccessControlRoot>
     <GmaModuleAuthRoot>$(MSBuildThisFileDirectory)..\gma-module-auth\src\</GmaModuleAuthRoot>
     <GmaModuleNotificationsRoot>$(MSBuildThisFileDirectory)..\gma-module-notifications\src\</GmaModuleNotificationsRoot>
     <GmaModuleOrganizationsRoot>$(MSBuildThisFileDirectory)..\gma-module-organizations\src\</GmaModuleOrganizationsRoot>

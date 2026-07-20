@@ -46,6 +46,16 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Checkout AccessControl
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: SadPossum/GMA-Module-Access-Control
+          ref: ${{ github.event_name == 'push' && github.ref_name == 'main' && 'main' || 'dev' }}
+          path: gma-module-access-control
+          token: ${{ secrets.GMA_CI_TOKEN || github.token }}
+          fetch-depth: 0
+          persist-credentials: false
+
       - name: Checkout Notifications
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -81,6 +91,11 @@ jobs:
         working-directory: gma-module-auth
         run: ./eng/bootstrap-source-roots.ps1 -Force
 
+      - name: Bootstrap AccessControl source roots
+        shell: pwsh
+        working-directory: gma-module-access-control
+        run: ./eng/bootstrap-source-roots.ps1 -Force
+
       - name: Bootstrap Notifications source roots
         shell: pwsh
         working-directory: gma-module-notifications
@@ -102,3 +117,7 @@ jobs:
       - name: Test
         working-directory: gma-extensions
         run: dotnet test Gma.Extensions.slnx --no-build --logger "console;verbosity=minimal"
+
+      - name: Audit packages
+        working-directory: gma-extensions
+        run: dotnet list Gma.Extensions.slnx package --vulnerable --include-transitive
