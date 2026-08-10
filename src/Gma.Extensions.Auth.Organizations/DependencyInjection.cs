@@ -27,6 +27,12 @@ public static class DependencyInjection
                 "A global Auth scope id is required.")
             .ValidateOnStart();
         services.TryAddEnumerable(ServiceDescriptor.Scoped<
+            IOrganizationCreationAdmissionPolicy,
+            AuthOrganizationCreationAdmissionPolicy>());
+        services.TryAddEnumerable(ServiceDescriptor.Scoped<
+            IOrganizationJoinAdmissionPolicy,
+            AuthOrganizationJoinAdmissionPolicy>());
+        services.TryAddEnumerable(ServiceDescriptor.Scoped<
             IOrganizationInvitationRecipientVerificationPolicy,
             AuthOrganizationInvitationRecipientVerificationPolicy>());
 

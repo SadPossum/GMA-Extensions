@@ -12,13 +12,14 @@ Extensions are optional integration packages, not modules. They live outside mod
 - email-verification requests;
 - completed email verification.
 
-It also supplies `IUserNotificationEmailAddressResolver`: recovery and verification messages use the exact address and expiry carried by the Auth event, fail terminally after expiry or on malformed payloads, and never fall back to another mailbox. Other alerts resolve the member's preferred verified email through `IAuthMemberContactReader` at delivery time. Recovery codes are never projected to the web channel. Hosts must encrypt and tightly retain every messaging, Notifications, and email-delivery record that temporarily carries a recovery code.
+It also supplies `IUserNotificationEmailAddressResolver`: recovery and verification messages use the exact address and expiry carried by the Auth event, fail terminally after expiry or on malformed payloads, and never fall back to another mailbox. Auth-owned security alerts may resolve retained verified contact after disablement so the account owner still receives the warning. Notifications from other modules require a currently active Auth member and a verified email at delivery time. Scope-aware Auth uses the notification scope by default; applications using a fixed global Auth scope configure `FixedAuthScopeId`. Recovery codes are never projected to the web channel. Hosts must encrypt and tightly retain every messaging, Notifications, and email-delivery record that temporarily carries a recovery code.
 
 ```csharp
 using Gma.Extensions.Auth.Notifications;
 
 builder.AddModule<NotificationsModule>();
-builder.Services.AddAuthNotificationsExtension();
+builder.Services.AddAuthNotificationsExtension(options =>
+    options.FixedAuthScopeId = "identity");
 builder.Services.AddNotificationEmailAdapter(builder.Configuration);
 ```
 
@@ -26,7 +27,7 @@ The host must also register an `IEmailSender` and enable the email adapter befor
 
 ## Auth + Organizations
 
-`Gma.Extensions.Auth.Organizations` replaces Organizations' fail-closed recipient-invitation policy with an Auth-backed policy. Unbound invitations keep working without an Auth lookup. A recipient-bound invitation can be accepted only when the subject id is an Auth member id and that member owns the same preferred verified email in the configured global Auth scope.
+`Gma.Extensions.Auth.Organizations` requires a currently active Auth member for organization creation and every invitation or enrollment join operation. It also replaces Organizations' fail-closed recipient-invitation policy with an Auth-backed policy: recipient-bound invitations additionally require the same preferred verified email in the configured global Auth scope. Unbound invitations and enrollment links do not require an email, but they still require an active member.
 
 ```csharp
 using Gma.Extensions.Auth.Organizations;

@@ -5,7 +5,7 @@ using Gma.Modules.Organizations.Contracts;
 using Microsoft.Extensions.Options;
 
 internal sealed class AuthOrganizationInvitationRecipientVerificationPolicy(
-    IAuthMemberContactReader contacts,
+    IAuthMemberAdmissionReader admissions,
     IOptions<AuthOrganizationsOptions> options)
     : IOrganizationInvitationRecipientVerificationPolicy
 {
@@ -20,13 +20,14 @@ internal sealed class AuthOrganizationInvitationRecipientVerificationPolicy(
             return OrganizationInvitationRecipientVerificationDecision.NotVerified;
         }
 
-        string? verifiedEmail = await contacts.GetPreferredVerifiedEmailAsync(
-            options.Value.GlobalAuthScopeId,
-            memberId,
-            cancellationToken).ConfigureAwait(false);
+        AuthMemberAdmission? admission = await admissions.FindActiveAsync(
+                options.Value.GlobalAuthScopeId,
+                memberId,
+                cancellationToken)
+            .ConfigureAwait(false);
 
         return string.Equals(
-                verifiedEmail?.Trim(),
+                admission?.PreferredVerifiedEmail?.Trim(),
                 request.RecipientEmail.Trim(),
                 StringComparison.OrdinalIgnoreCase)
             ? OrganizationInvitationRecipientVerificationDecision.Verified

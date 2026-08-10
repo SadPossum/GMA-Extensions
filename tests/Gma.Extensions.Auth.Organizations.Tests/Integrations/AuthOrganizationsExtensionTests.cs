@@ -12,8 +12,9 @@ public sealed class AuthOrganizationsExtensionTests
     public async Task Recipient_bound_invitation_requires_the_same_verified_email()
     {
         Guid memberId = Guid.NewGuid();
-        var contacts = new StubContacts("person@example.com");
-        await using ServiceProvider provider = BuildProvider(contacts, "identity");
+        var admissions = new StubAdmissions(
+            new AuthMemberAdmission("person@example.com"));
+        await using ServiceProvider provider = BuildProvider(admissions, "identity");
         IOrganizationInvitationRecipientVerificationPolicy policy = provider
             .GetRequiredService<IOrganizationInvitationRecipientVerificationPolicy>();
 
@@ -25,8 +26,8 @@ public sealed class AuthOrganizationsExtensionTests
         Assert.Equal(
             OrganizationInvitationRecipientVerificationDecision.Verified,
             decision);
-        Assert.Equal("identity", contacts.ScopeId);
-        Assert.Equal(memberId, contacts.MemberId);
+        Assert.Equal("identity", admissions.ScopeId);
+        Assert.Equal(memberId, admissions.MemberId);
     }
 
     [Theory]
@@ -34,8 +35,8 @@ public sealed class AuthOrganizationsExtensionTests
     [InlineData(null)]
     public async Task Recipient_bound_invitation_fails_closed_without_matching_verified_email(string? verifiedEmail)
     {
-        var contacts = new StubContacts(verifiedEmail);
-        await using ServiceProvider provider = BuildProvider(contacts);
+        var admissions = new StubAdmissions(new AuthMemberAdmission(verifiedEmail));
+        await using ServiceProvider provider = BuildProvider(admissions);
         IOrganizationInvitationRecipientVerificationPolicy policy = provider
             .GetRequiredService<IOrganizationInvitationRecipientVerificationPolicy>();
 
@@ -50,10 +51,68 @@ public sealed class AuthOrganizationsExtensionTests
     }
 
     [Fact]
+    public async Task Recipient_bound_invitation_rejects_an_inactive_member()
+    {
+        await using ServiceProvider provider = BuildProvider(new StubAdmissions(null));
+        IOrganizationInvitationRecipientVerificationPolicy policy = provider
+            .GetRequiredService<IOrganizationInvitationRecipientVerificationPolicy>();
+
+        OrganizationInvitationRecipientVerificationDecision decision =
+            await policy.EvaluateAsync(
+                Request(Guid.NewGuid().ToString("D"), "person@example.com"),
+                CancellationToken.None);
+
+        Assert.Equal(
+            OrganizationInvitationRecipientVerificationDecision.NotVerified,
+            decision);
+    }
+
+    [Fact]
+    public async Task Active_member_can_create_and_join_an_organization_without_a_verified_email()
+    {
+        Guid memberId = Guid.NewGuid();
+        var admissions = new StubAdmissions(new AuthMemberAdmission(null));
+        await using ServiceProvider provider = BuildProvider(admissions, "identity");
+
+        OrganizationCreationAdmissionDecision creation = await provider
+            .GetRequiredService<IOrganizationCreationAdmissionPolicy>()
+            .EvaluateAsync(CreationRequest(memberId.ToString("D")), CancellationToken.None);
+        OrganizationJoinAdmissionDecision join = await provider
+            .GetRequiredService<IOrganizationJoinAdmissionPolicy>()
+            .EvaluateAsync(JoinContext(memberId.ToString("D")), CancellationToken.None);
+
+        Assert.Equal(OrganizationCreationAdmissionDecision.Allowed, creation);
+        Assert.Equal(OrganizationJoinAdmissionDecision.Allowed, join);
+        Assert.Equal(2, admissions.CallCount);
+        Assert.Equal("identity", admissions.ScopeId);
+        Assert.Equal(memberId, admissions.MemberId);
+    }
+
+    [Fact]
+    public async Task Inactive_member_cannot_create_or_join_an_organization()
+    {
+        await using ServiceProvider provider = BuildProvider(new StubAdmissions(null));
+        string memberId = Guid.NewGuid().ToString("D");
+
+        OrganizationCreationAdmissionDecision creation = await provider
+            .GetRequiredService<IOrganizationCreationAdmissionPolicy>()
+            .EvaluateAsync(CreationRequest(memberId), CancellationToken.None);
+        OrganizationJoinAdmissionDecision join = await provider
+            .GetRequiredService<IOrganizationJoinAdmissionPolicy>()
+            .EvaluateAsync(JoinContext(memberId), CancellationToken.None);
+
+        Assert.Equal(
+            OrganizationCreationAdmissionDecision.SubjectVerificationRequired,
+            creation);
+        Assert.Equal(OrganizationJoinAdmissionDecision.Denied, join);
+    }
+
+    [Fact]
     public async Task Invalid_subject_does_not_query_auth()
     {
-        var contacts = new StubContacts("person@example.com");
-        await using ServiceProvider provider = BuildProvider(contacts);
+        var admissions = new StubAdmissions(
+            new AuthMemberAdmission("person@example.com"));
+        await using ServiceProvider provider = BuildProvider(admissions);
         IOrganizationInvitationRecipientVerificationPolicy policy = provider
             .GetRequiredService<IOrganizationInvitationRecipientVerificationPolicy>();
 
@@ -65,8 +124,26 @@ public sealed class AuthOrganizationsExtensionTests
         Assert.Equal(
             OrganizationInvitationRecipientVerificationDecision.NotVerified,
             decision);
-        Assert.Null(contacts.ScopeId);
+        Assert.Null(admissions.ScopeId);
     }
+
+    private static OrganizationCreationAdmissionRequest CreationRequest(string subjectId) =>
+        new(
+            Guid.NewGuid(),
+            "Example organization",
+            "example-organization",
+            subjectId,
+            subjectId);
+
+    private static OrganizationJoinAdmissionContext JoinContext(string subjectId) =>
+        new(
+            OrganizationJoinAdmissionOperation.ClaimEnrollment,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            null,
+            subjectId,
+            subjectId,
+            OrganizationEnrollmentApprovalMode.Automatic);
 
     private static OrganizationInvitationRecipientVerificationRequest Request(
         string subjectId,
@@ -77,27 +154,30 @@ public sealed class AuthOrganizationsExtensionTests
             subjectId,
             recipientEmail);
 
-    private static ServiceProvider BuildProvider(StubContacts contacts, string scopeId = AuthProfile.DefaultGlobalScopeId)
+    private static ServiceProvider BuildProvider(StubAdmissions admissions, string scopeId = AuthProfile.DefaultGlobalScopeId)
     {
         var services = new ServiceCollection();
-        services.AddSingleton<IAuthMemberContactReader>(contacts);
+        services.AddSingleton<IAuthMemberAdmissionReader>(admissions);
         services.AddAuthOrganizationsExtension(options => options.GlobalAuthScopeId = scopeId);
         return services.BuildServiceProvider();
     }
 
-    private sealed class StubContacts(string? verifiedEmail) : IAuthMemberContactReader
+    private sealed class StubAdmissions(AuthMemberAdmission? admission)
+        : IAuthMemberAdmissionReader
     {
+        public int CallCount { get; private set; }
         public string? ScopeId { get; private set; }
         public Guid? MemberId { get; private set; }
 
-        public ValueTask<string?> GetPreferredVerifiedEmailAsync(
+        public ValueTask<AuthMemberAdmission?> FindActiveAsync(
             string scopeId,
             Guid memberId,
             CancellationToken cancellationToken = default)
         {
+            this.CallCount++;
             this.ScopeId = scopeId;
             this.MemberId = memberId;
-            return ValueTask.FromResult(verifiedEmail);
+            return ValueTask.FromResult(admission);
         }
     }
 }

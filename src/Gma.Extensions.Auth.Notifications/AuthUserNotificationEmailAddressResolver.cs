@@ -6,10 +6,12 @@ using Gma.Framework.Runtime.Time;
 using Gma.Modules.Auth.Contracts;
 using Gma.Modules.Notifications.Adapters.Email;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 internal sealed class AuthUserNotificationEmailAddressResolver(
     IServiceScopeFactory scopeFactory,
-    ISystemClock clock)
+    ISystemClock clock,
+    IOptions<AuthNotificationsOptions> options)
     : IUserNotificationEmailAddressResolver
 {
     public async ValueTask<NotificationEmailDestinationResult> ResolveAsync(
@@ -27,10 +29,26 @@ internal sealed class AuthUserNotificationEmailAddressResolver(
         }
 
         await using AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
-        IAuthMemberContactReader reader = scope.ServiceProvider.GetRequiredService<IAuthMemberContactReader>();
-        string? email = await reader
-            .GetPreferredVerifiedEmailAsync(message.ScopeId, memberId, cancellationToken)
-            .ConfigureAwait(false);
+        string? email;
+        if (string.Equals(message.Module, AuthModuleMetadata.Name, StringComparison.Ordinal))
+        {
+            IAuthMemberContactReader reader = scope.ServiceProvider
+                .GetRequiredService<IAuthMemberContactReader>();
+            email = await reader
+                .GetPreferredVerifiedEmailAsync(message.ScopeId, memberId, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            IAuthMemberAdmissionReader reader = scope.ServiceProvider
+                .GetRequiredService<IAuthMemberAdmissionReader>();
+            string authScopeId = options.Value.FixedAuthScopeId ?? message.ScopeId;
+            AuthMemberAdmission? admission = await reader
+                .FindActiveAsync(authScopeId, memberId, cancellationToken)
+                .ConfigureAwait(false);
+            email = admission?.PreferredVerifiedEmail;
+        }
+
         return EmailSendRequest.IsValidAddress(email)
             ? NotificationEmailDestinationResult.Resolved(email!)
             : NotificationEmailDestinationResult.Unavailable("auth-verified-email-unavailable");
