@@ -1,6 +1,6 @@
 namespace Gma.Extensions.Auth.Organizations;
 
-using Gma.Modules.Organizations.Application.Ports;
+using Gma.Modules.Organizations.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -26,9 +26,9 @@ public static class DependencyInjection
                 options => !string.IsNullOrWhiteSpace(options.GlobalAuthScopeId),
                 "A global Auth scope id is required.")
             .ValidateOnStart();
-        services.Replace(ServiceDescriptor.Scoped<
-            IOrganizationInvitationAdmissionPolicy,
-            AuthOrganizationInvitationAdmissionPolicy>());
+        services.TryAddEnumerable(ServiceDescriptor.Scoped<
+            IOrganizationInvitationRecipientVerificationPolicy,
+            AuthOrganizationInvitationRecipientVerificationPolicy>());
 
         return services;
     }

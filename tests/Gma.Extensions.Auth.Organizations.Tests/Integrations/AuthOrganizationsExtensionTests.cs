@@ -1,8 +1,7 @@
 namespace Gma.Extensions.Auth.Organizations.Tests;
 
 using Gma.Modules.Auth.Contracts;
-using Gma.Modules.Organizations.Application;
-using Gma.Modules.Organizations.Application.Ports;
+using Gma.Modules.Organizations.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -15,14 +14,17 @@ public sealed class AuthOrganizationsExtensionTests
         Guid memberId = Guid.NewGuid();
         var contacts = new StubContacts("person@example.com");
         await using ServiceProvider provider = BuildProvider(contacts, "identity");
-        IOrganizationInvitationAdmissionPolicy policy = provider.GetRequiredService<IOrganizationInvitationAdmissionPolicy>();
+        IOrganizationInvitationRecipientVerificationPolicy policy = provider
+            .GetRequiredService<IOrganizationInvitationRecipientVerificationPolicy>();
 
-        var accepted = await policy.CanAcceptInvitationAsync(
-            memberId.ToString("D"),
-            "PERSON@example.com",
-            CancellationToken.None);
+        OrganizationInvitationRecipientVerificationDecision decision =
+            await policy.EvaluateAsync(
+                Request(memberId.ToString("D"), "PERSON@example.com"),
+                CancellationToken.None);
 
-        Assert.True(accepted.IsSuccess);
+        Assert.Equal(
+            OrganizationInvitationRecipientVerificationDecision.Verified,
+            decision);
         Assert.Equal("identity", contacts.ScopeId);
         Assert.Equal(memberId, contacts.MemberId);
     }
@@ -34,32 +36,46 @@ public sealed class AuthOrganizationsExtensionTests
     {
         var contacts = new StubContacts(verifiedEmail);
         await using ServiceProvider provider = BuildProvider(contacts);
-        IOrganizationInvitationAdmissionPolicy policy = provider.GetRequiredService<IOrganizationInvitationAdmissionPolicy>();
+        IOrganizationInvitationRecipientVerificationPolicy policy = provider
+            .GetRequiredService<IOrganizationInvitationRecipientVerificationPolicy>();
 
-        var accepted = await policy.CanAcceptInvitationAsync(
-            Guid.NewGuid().ToString("D"),
-            "person@example.com",
-            CancellationToken.None);
+        OrganizationInvitationRecipientVerificationDecision decision =
+            await policy.EvaluateAsync(
+                Request(Guid.NewGuid().ToString("D"), "person@example.com"),
+                CancellationToken.None);
 
-        Assert.False(accepted.IsSuccess);
-        Assert.Equal(OrganizationApplicationErrors.RecipientVerificationRequired.Code, accepted.Error.Code);
+        Assert.Equal(
+            OrganizationInvitationRecipientVerificationDecision.NotVerified,
+            decision);
     }
 
     [Fact]
-    public async Task Unbound_invitation_does_not_query_auth()
+    public async Task Invalid_subject_does_not_query_auth()
     {
         var contacts = new StubContacts("person@example.com");
         await using ServiceProvider provider = BuildProvider(contacts);
-        IOrganizationInvitationAdmissionPolicy policy = provider.GetRequiredService<IOrganizationInvitationAdmissionPolicy>();
+        IOrganizationInvitationRecipientVerificationPolicy policy = provider
+            .GetRequiredService<IOrganizationInvitationRecipientVerificationPolicy>();
 
-        var accepted = await policy.CanAcceptInvitationAsync(
-            "external-subject",
-            recipientEmail: null,
-            CancellationToken.None);
+        OrganizationInvitationRecipientVerificationDecision decision =
+            await policy.EvaluateAsync(
+                Request("external-subject", "person@example.com"),
+                CancellationToken.None);
 
-        Assert.True(accepted.IsSuccess);
+        Assert.Equal(
+            OrganizationInvitationRecipientVerificationDecision.NotVerified,
+            decision);
         Assert.Null(contacts.ScopeId);
     }
+
+    private static OrganizationInvitationRecipientVerificationRequest Request(
+        string subjectId,
+        string recipientEmail) =>
+        new(
+            Guid.Parse("11111111-1111-4111-8111-111111111111"),
+            Guid.Parse("22222222-2222-4222-8222-222222222222"),
+            subjectId,
+            recipientEmail);
 
     private static ServiceProvider BuildProvider(StubContacts contacts, string scopeId = AuthProfile.DefaultGlobalScopeId)
     {

@@ -17,7 +17,7 @@ $allowedModuleReferences = @{
     )
     'Gma.Extensions.Auth.Organizations' = @(
         '$(GmaModuleAuthRoot)Gma.Modules.Auth.Contracts\Gma.Modules.Auth.Contracts.csproj'
-        '$(GmaModuleOrganizationsRoot)Gma.Modules.Organizations.Application\Gma.Modules.Organizations.Application.csproj'
+        '$(GmaModuleOrganizationsRoot)Gma.Modules.Organizations.Contracts\Gma.Modules.Organizations.Contracts.csproj'
     )
     'Gma.Extensions.Organizations.AccessControl' = @(
         '$(GmaModuleAccessControlRoot)Gma.Modules.AccessControl.Contracts\Gma.Modules.AccessControl.Contracts.csproj'
@@ -37,8 +37,7 @@ $allowedModuleNamespaces = @{
     )
     'Gma.Extensions.Auth.Organizations' = @(
         'Gma.Modules.Auth.Contracts'
-        '=Gma.Modules.Organizations.Application'
-        'Gma.Modules.Organizations.Application.Ports'
+        'Gma.Modules.Organizations.Contracts'
     )
     'Gma.Extensions.Organizations.AccessControl' = @(
         'Gma.Modules.AccessControl.Contracts'
