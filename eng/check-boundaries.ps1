@@ -24,7 +24,7 @@ $allowedModuleReferences = @{
         '$(GmaModuleOrganizationsRoot)Gma.Modules.Organizations.Contracts\Gma.Modules.Organizations.Contracts.csproj'
     )
     'Gma.Extensions.Organizations.Tenancy' = @(
-        '$(GmaModuleOrganizationsRoot)Gma.Modules.Organizations.Application\Gma.Modules.Organizations.Application.csproj'
+        '$(GmaModuleOrganizationsRoot)Gma.Modules.Organizations.Contracts\Gma.Modules.Organizations.Contracts.csproj'
     )
 }
 
@@ -44,7 +44,7 @@ $allowedModuleNamespaces = @{
         'Gma.Modules.Organizations.Contracts'
     )
     'Gma.Extensions.Organizations.Tenancy' = @(
-        'Gma.Modules.Organizations.Application.Ports'
+        'Gma.Modules.Organizations.Contracts'
     )
 }
 

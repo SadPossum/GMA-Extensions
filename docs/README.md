@@ -40,7 +40,14 @@ Register the extension after the Organizations module. Pass a configuration call
 
 ## Organizations + Tenancy
 
-`Gma.Extensions.Organizations.Tenancy` plugs an Organizations access decision into the framework's tenant endpoint policy hook. Every endpoint using `RequireTenant()` then fails closed for user subjects unless the selected tenant is an active organization with an active membership. Admin actor, service, and system subjects bypass membership lookup by default; user bypasses are rejected by options validation.
+`Gma.Extensions.Organizations.Tenancy` plugs the Organizations Contracts access
+decision into the framework's tenant endpoint policy hook. Every endpoint using
+`RequireTenant()` then fails closed for user subjects unless the selected tenant
+is an active organization with an active membership. Missing or inactive
+authority returns one generic 403 without revealing state; unavailable or
+indeterminate authority returns one generic 503. Caller cancellation still
+propagates. Admin actor, service, and system subjects bypass membership lookup
+by default; user bypasses are rejected by options validation.
 
 ```csharp
 using Gma.Extensions.Organizations.Tenancy;

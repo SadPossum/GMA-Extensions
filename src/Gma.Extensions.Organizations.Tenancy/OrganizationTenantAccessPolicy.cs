@@ -3,14 +3,16 @@ namespace Gma.Extensions.Organizations.Tenancy;
 using Gma.Framework.AccessControl;
 using Gma.Framework.AccessControl.AspNetCore;
 using Gma.Framework.Api.Tenancy;
-using Gma.Modules.Organizations.Application.Ports;
+using Gma.Modules.Organizations.Contracts;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-internal sealed class OrganizationTenantAccessPolicy(
+internal sealed partial class OrganizationTenantAccessPolicy(
     IAccessHttpSubjectResolver subjectResolver,
     IOrganizationAccessDecisionReader accessReader,
-    IOptions<OrganizationsTenancyOptions> options) : ITenantEndpointAccessPolicy
+    IOptions<OrganizationsTenancyOptions> options,
+    ILogger<OrganizationTenantAccessPolicy>? logger = null) : ITenantEndpointAccessPolicy
 {
     public async ValueTask<TenantEndpointAccessDecision> AuthorizeAsync(
         HttpContext httpContext,
@@ -40,16 +42,76 @@ internal sealed class OrganizationTenantAccessPolicy(
             return AccessDenied();
         }
 
-        OrganizationAccessDecision decision = await accessReader
-            .ReadAsync(organizationId, subject.Id, cancellationToken)
-            .ConfigureAwait(false);
-        return decision == OrganizationAccessDecision.Allowed
-            ? TenantEndpointAccessDecision.Allowed
-            : AccessDenied();
+        OrganizationAccessDecision decision;
+        try
+        {
+            decision = await accessReader
+                .ReadAsync(organizationId, subject.Id, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            if (logger is not null)
+            {
+                LogReaderFailure(
+                    logger,
+                    accessReader.GetType().FullName,
+                    exception.GetType().Name);
+            }
+
+            return AccessUnavailable();
+        }
+
+        return decision switch
+        {
+            OrganizationAccessDecision.Allowed => TenantEndpointAccessDecision.Allowed,
+            OrganizationAccessDecision.OrganizationNotFound or
+                OrganizationAccessDecision.OrganizationInactive or
+                OrganizationAccessDecision.MembershipNotFound or
+                OrganizationAccessDecision.MembershipInactive => AccessDenied(),
+            _ => this.IndeterminateAccess()
+        };
+    }
+
+    private TenantEndpointAccessDecision IndeterminateAccess()
+    {
+        if (logger is not null)
+        {
+            LogIndeterminateDecision(logger, accessReader.GetType().FullName);
+        }
+
+        return AccessUnavailable();
     }
 
     private static TenantEndpointAccessDecision AccessDenied() =>
         TenantEndpointAccessDecision.Denied(
             OrganizationTenancyErrors.AccessDeniedCode,
             OrganizationTenancyErrors.AccessDeniedMessage);
+
+    private static TenantEndpointAccessDecision AccessUnavailable() =>
+        TenantEndpointAccessDecision.Denied(
+            OrganizationTenancyErrors.AccessUnavailableCode,
+            OrganizationTenancyErrors.AccessUnavailableMessage,
+            StatusCodes.Status503ServiceUnavailable);
+
+    [LoggerMessage(
+        EventId = 4201,
+        Level = LogLevel.Error,
+        Message = "Organization access reader {ReaderType} failed with {ExceptionType}; tenant access is unavailable.")]
+    private static partial void LogReaderFailure(
+        ILogger logger,
+        string? readerType,
+        string exceptionType);
+
+    [LoggerMessage(
+        EventId = 4202,
+        Level = LogLevel.Warning,
+        Message = "Organization access reader {ReaderType} returned an indeterminate decision; tenant access is unavailable.")]
+    private static partial void LogIndeterminateDecision(
+        ILogger logger,
+        string? readerType);
 }

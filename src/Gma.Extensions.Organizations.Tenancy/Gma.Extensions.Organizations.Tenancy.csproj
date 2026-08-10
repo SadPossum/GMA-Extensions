@@ -3,7 +3,7 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(GmaModuleOrganizationsRoot)Gma.Modules.Organizations.Application\Gma.Modules.Organizations.Application.csproj" />
+    <ProjectReference Include="$(GmaModuleOrganizationsRoot)Gma.Modules.Organizations.Contracts\Gma.Modules.Organizations.Contracts.csproj" />
     <ProjectReference Include="$(GmaFrameworkRoot)Api\Gma.Framework.Api\Gma.Framework.Api.csproj" />
     <ProjectReference Include="$(GmaFrameworkRoot)Security\Gma.Framework.AccessControl\Gma.Framework.AccessControl.csproj" />
     <ProjectReference Include="$(GmaFrameworkRoot)Security\Gma.Framework.AccessControl.AspNetCore\Gma.Framework.AccessControl.AspNetCore.csproj" />
