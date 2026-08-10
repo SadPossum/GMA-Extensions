@@ -3,7 +3,6 @@ namespace Gma.Extensions.Auth.Notifications;
 using System.Text.Json;
 using Gma.Framework.Messaging;
 using Gma.Modules.Auth.Contracts;
-using Gma.Modules.Notifications.Application.Ports;
 using Gma.Modules.Notifications.Contracts;
 
 [IntegrationEventHandler("auth-member-authenticated-notification", RequiresExplicitProducerBinding = true)]

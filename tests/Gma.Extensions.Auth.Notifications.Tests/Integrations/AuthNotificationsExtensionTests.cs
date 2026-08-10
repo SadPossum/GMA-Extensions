@@ -5,7 +5,6 @@ using Gma.Framework.Notifications;
 using Gma.Framework.Runtime.Time;
 using Gma.Modules.Auth.Contracts;
 using Gma.Modules.Notifications.Adapters.Email;
-using Gma.Modules.Notifications.Application.Ports;
 using Gma.Modules.Notifications.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;

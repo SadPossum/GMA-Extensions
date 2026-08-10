@@ -12,7 +12,6 @@ $allowedModuleReferences = @{
     'Gma.Extensions.Auth.Notifications' = @(
         '$(GmaModuleAuthRoot)Gma.Modules.Auth.Contracts\Gma.Modules.Auth.Contracts.csproj'
         '$(GmaModuleNotificationsRoot)Gma.Modules.Notifications.Adapters.Email\Gma.Modules.Notifications.Adapters.Email.csproj'
-        '$(GmaModuleNotificationsRoot)Gma.Modules.Notifications.Application\Gma.Modules.Notifications.Application.csproj'
         '$(GmaModuleNotificationsRoot)Gma.Modules.Notifications.Contracts\Gma.Modules.Notifications.Contracts.csproj'
     )
     'Gma.Extensions.Auth.Organizations' = @(
@@ -32,7 +31,6 @@ $allowedModuleNamespaces = @{
     'Gma.Extensions.Auth.Notifications' = @(
         'Gma.Modules.Auth.Contracts'
         'Gma.Modules.Notifications.Adapters.Email'
-        'Gma.Modules.Notifications.Application.Ports'
         'Gma.Modules.Notifications.Contracts'
     )
     'Gma.Extensions.Auth.Organizations' = @(
