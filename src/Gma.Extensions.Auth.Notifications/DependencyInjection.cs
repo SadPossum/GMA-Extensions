@@ -35,42 +35,27 @@ public static class DependencyInjection
             MemberAuthenticatedIntegrationEvent,
             MemberAuthenticatedNotificationHandler>(
             NotificationsModuleMetadata.Name,
-            AuthModuleMetadata.Name,
-            MemberAuthenticatedIntegrationEvent.EventType,
-            MemberAuthenticatedIntegrationEvent.EventVersion,
-            "auth-member-authenticated-notification");
+            AuthModuleMetadata.Name);
         services.AddIntegrationEventHandler<
             MemberAuthenticationMethodChangedIntegrationEvent,
             MemberAuthenticationMethodChangedNotificationHandler>(
             NotificationsModuleMetadata.Name,
-            AuthModuleMetadata.Name,
-            MemberAuthenticationMethodChangedIntegrationEvent.EventType,
-            MemberAuthenticationMethodChangedIntegrationEvent.EventVersion,
-            "auth-method-changed-notification");
+            AuthModuleMetadata.Name);
         services.AddIntegrationEventHandler<
             MemberPasswordRecoveryRequestedIntegrationEvent,
             MemberPasswordRecoveryRequestedNotificationHandler>(
             NotificationsModuleMetadata.Name,
-            AuthModuleMetadata.Name,
-            MemberPasswordRecoveryRequestedIntegrationEvent.EventType,
-            MemberPasswordRecoveryRequestedIntegrationEvent.EventVersion,
-            "auth-password-recovery-request-notification");
+            AuthModuleMetadata.Name);
         services.AddIntegrationEventHandler<
             MemberEmailVerificationRequestedIntegrationEvent,
             MemberEmailVerificationRequestedNotificationHandler>(
             NotificationsModuleMetadata.Name,
-            AuthModuleMetadata.Name,
-            MemberEmailVerificationRequestedIntegrationEvent.EventType,
-            MemberEmailVerificationRequestedIntegrationEvent.EventVersion,
-            "auth-email-verification-request-notification");
+            AuthModuleMetadata.Name);
         services.AddIntegrationEventHandler<
             MemberEmailVerifiedIntegrationEvent,
             MemberEmailVerifiedNotificationHandler>(
             NotificationsModuleMetadata.Name,
-            AuthModuleMetadata.Name,
-            MemberEmailVerifiedIntegrationEvent.EventType,
-            MemberEmailVerifiedIntegrationEvent.EventVersion,
-            "auth-email-verified-notification");
+            AuthModuleMetadata.Name);
 
         return services;
     }
